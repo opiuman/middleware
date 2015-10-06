@@ -33,9 +33,3 @@ func (mdb *MongoDB) ServeHTTP(rw http.ResponseWriter, req *http.Request, next ht
 	next(rw, req)
 }
 
-func (mdb *MongoDB) GetDB(req *http.Request) *mgo.Database {
-	if reqv := context.Get(req, mdb.DB); reqv != nil {
-		return reqv.(*mgo.Database)
-	}
-	return nil
-}
