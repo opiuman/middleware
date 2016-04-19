@@ -5,19 +5,16 @@ import (
 	"time"
 
 	"github.com/Sirupsen/logrus"
-	"github.com/codegangsta/negroni"
+	"github.com/opiuman/negroni"
 )
 
 type Logger struct {
-	AppName   string
+	*logrus.Entry
 	ErrHeader string
 }
 
-func NewLogger(appName, errHeader string) *Logger {
-	return &Logger{
-		AppName:   appName,
-		ErrHeader: errHeader,
-	}
+func NewLogger(appName string) *Logger {
+	return &Logger{logrus.WithField("application", appName), appName + "-error"}
 }
 
 func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.HandlerFunc) {
@@ -27,39 +24,31 @@ func (l *Logger) ServeHTTP(rw http.ResponseWriter, r *http.Request, next http.Ha
 	took := time.Since(start)
 	ngrw := rw.(negroni.ResponseWriter)
 
-	log := logrus.WithFields(logrus.Fields{
-		"app":     l.AppName,
+	status := ngrw.Status()
+	log := l.WithFields(logrus.Fields{
 		"request": r.RequestURI,
 		"action":  r.Method,
 		"remote":  r.RemoteAddr,
-		"status":  ngrw.Status(),
+		"status":  status,
 		"took":    took,
 	})
-	if ngrw.Status() != 200 {
+	if status >= 400 {
 		log.Errorln(ngrw.Header().Get(l.ErrHeader))
 		return
 	}
-	log.Infoln("Request Complete")
-}
-
-func (l *Logger) WriteErrHeader(rw *http.ResponseWriter, err *error) {
-	(*rw).Header().Add(l.ErrHeader, (*err).Error())
-	(*rw).WriteHeader(http.StatusInternalServerError)
-}
-
-func (l *Logger) LogFatal(appmsg string, err error) {
-	if err != nil {
-		logrus.WithFields(logrus.Fields{
-			"app":    l.AppName,
-			"appmsg": appmsg,
-		}).Fatalln(err)
+	if ngrw.Header().Get("info") != "" {
+		log.Info(ngrw.Header().Get("info"))
+		return
 	}
+	log.Infof("%d OK", status)
 }
 
-func (l *Logger) LogError(appmsg, msgBody string, err error) {
-	logrus.WithFields(logrus.Fields{
-		"app":     l.AppName,
-		"msgbody": msgBody,
-		"appmsg":  appmsg,
-	}).Errorln(err)
+func (l *Logger) WriteErrHeader(rw *http.ResponseWriter, err *error, status int) {
+	(*rw).Header().Add(l.ErrHeader, (*err).Error())
+	(*rw).WriteHeader(status)
+}
+
+func (l *Logger) WriteInfoHeader(rw *http.ResponseWriter, info string) {
+	(*rw).Header().Add("info", info)
+	(*rw).WriteHeader(http.StatusOK)
 }
