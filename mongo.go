@@ -39,3 +39,7 @@ func (mdb *MongoDB) GetDB(req *http.Request) *mgo.Database {
 	}
 	return nil
 }
+
+func (mdb *MongoDB) Close() {
+	mdb.Session.Close()
+}
