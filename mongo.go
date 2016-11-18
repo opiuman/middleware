@@ -19,7 +19,7 @@ func NewDB(addrs []string, db, user, pwd string, log *Logger) *MongoDB {
 	}
 	info := &mgo.DialInfo{
 		Addrs:    addrs,
-		Timeout:  60 * time.Second,
+		Timeout:  10 * time.Second,
 		Database: db,
 		Username: user,
 		Password: pwd,
