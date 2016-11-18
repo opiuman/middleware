@@ -2,6 +2,7 @@ package middleware
 
 import (
 	"net/http"
+	"time"
 
 	"github.com/gorilla/context"
 	"gopkg.in/mgo.v2"
@@ -12,11 +13,18 @@ type MongoDB struct {
 	DB      string
 }
 
-func NewDB(mgoSrv, db string, log *Logger) *MongoDB {
+func NewDB(mgoSrv, db, user, pwd string, log *Logger) *MongoDB {
 	mdb := MongoDB{
 		DB: db,
 	}
-	session, err := mgo.Dial(mgoSrv)
+	info := &mgo.DialInfo{
+		Addrs:    []string{mgoSrv},
+		Timeout:  60 * time.Second,
+		Database: db,
+		Username: user,
+		Password: pwd,
+	}
+	session, err := mgo.DialWithInfo(info)
 	if err != nil {
 		log.Fatalf("failed to connect to mongodb at -- %s", err)
 	}
