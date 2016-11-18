@@ -13,12 +13,12 @@ type MongoDB struct {
 	DB      string
 }
 
-func NewDB(mgoSrv, db, user, pwd string, log *Logger) *MongoDB {
+func NewDB(addrs []string, db, user, pwd string, log *Logger) *MongoDB {
 	mdb := MongoDB{
 		DB: db,
 	}
 	info := &mgo.DialInfo{
-		Addrs:    []string{mgoSrv},
+		Addrs:    addrs,
 		Timeout:  60 * time.Second,
 		Database: db,
 		Username: user,
@@ -26,7 +26,7 @@ func NewDB(mgoSrv, db, user, pwd string, log *Logger) *MongoDB {
 	}
 	session, err := mgo.DialWithInfo(info)
 	if err != nil {
-		log.Fatalf("failed to connect to mongodb at -- %s", err)
+		log.Fatalf("failed to connect to mongodb at %s -- %s", addrs, err)
 	}
 	mdb.Session = session
 
